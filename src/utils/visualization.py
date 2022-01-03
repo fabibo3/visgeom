@@ -228,7 +228,7 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
         plotter.show()
 
 def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
-                       label_mode='contour', labels_from_mesh: str=None, 
+                       label_mode='contour', labels_from_mesh: str=None,
                        output_file=None):
     """
     Show three centered slices of a 3D image
@@ -266,9 +266,12 @@ def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
         img3 = img3[:, :, int(img3D.shape[2]/2)]
         img3 = np.rot90(img3)
 
-        labels = _get_labels_from_mesh(
-            labels_from_mesh, patch_size=img3D.get_fdata().shape
-        )
+        try:
+            labels = _get_labels_from_mesh(
+                labels_from_mesh, patch_size=img3D.get_fdata().shape
+            )
+        except ValueError:
+            labels = None
 
         if labels is not None and show_label:
             # Read and show ground truth
