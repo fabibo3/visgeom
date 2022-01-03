@@ -24,6 +24,11 @@ def vis_mesh():
                         type=float,
                         default=1.0,
                         help="Opacity used for rendering.")
+    parser.add_argument('--screenshot',
+                        type=float,
+                        default=None,
+                        help="Optionally specify a path where a screenshot is"
+                        " stored.")
     parser.add_argument('--backend',
                         metavar='LIB',
                         type=str,

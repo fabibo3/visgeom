@@ -59,7 +59,7 @@ def find_label_to_img(base_dir: str, img_id: str, label_dir_id="label"):
 
 
 def show_pointcloud(filenames: Union[str, list], backend='open3d', opacity=1.0,
-                    values=None):
+                    values=None, screenshot=None):
     """
     Show a point cloud stored in a file (e.g. .ply) using open3d or pyvista.
 
@@ -103,7 +103,8 @@ def show_pointcloud(filenames: Union[str, list], backend='open3d', opacity=1.0,
         if backend == 'open3d':
             show_pointcloud_open3d(fn)
         elif backend == 'pyvista':
-            show_pointcloud_pyvista(fn, opacity=opacity, value=value)
+            show_pointcloud_pyvista(fn, opacity=opacity, value=value,
+                                    screenshot_fn=screenshot)
         else:
             raise ValueError("Unknown backend {}".format(backend))
 
@@ -149,7 +150,8 @@ def store_with_color(t_mesh, values, path, vmin=0, vmax=5):
         # rgb2hex accepts rgb or rgba
         print(matplotlib.colors.rgb2hex(rgba))
 
-def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None):
+def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
+                            screenshot_fn=None):
     """
     Show a point cloud stored in a file (e.g. .ply) using pyvista.
 
@@ -216,12 +218,14 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None):
             # # clim=[0, 2],
         # )
 
-    fn = '../misc/rendered_mesh.png'
     # points = cloud.points[:10]
     # labels = [str(i) for i in range(10)]
     # plotter.add_point_labels(points, labels)
-    plotter.show(screenshot=fn)
-    print("Stored a screenshot at ", fn)
+    if screenshot_fn:
+        plotter.show(screenshot=screenshot_fn)
+        print("Stored a screenshot at ", screenshot_fn)
+    else:
+        plotter.show()
 
 def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
                        label_mode='contour', labels_from_mesh: str=None, 
