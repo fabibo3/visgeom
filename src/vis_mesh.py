@@ -46,7 +46,7 @@ def vis_mesh():
     else:
         filenames = args.filenames
     show_pointcloud(filenames, backend=args.backend, opacity=args.opacity,
-                    values=args.values)
+                    values=args.values, clim=args.clim)
 
 
 if __name__ == "__main__":
