@@ -24,6 +24,11 @@ def vis_mesh():
                         type=float,
                         default=1.0,
                         help="Opacity used for rendering.")
+    parser.add_argument('--clim',
+                        type=float,
+                        default=1.0,
+                        nargs=2,
+                        help="Color limits for value visualization.")
     parser.add_argument('--screenshot',
                         type=float,
                         default=None,

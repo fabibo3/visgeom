@@ -59,7 +59,7 @@ def find_label_to_img(base_dir: str, img_id: str, label_dir_id="label"):
 
 
 def show_pointcloud(filenames: Union[str, list], backend='open3d', opacity=1.0,
-                    values=None, screenshot=None):
+                    values=None, screenshot=None, clim=[0.0, 5.0]):
     """
     Show a point cloud stored in a file (e.g. .ply) using open3d or pyvista.
 
@@ -104,7 +104,7 @@ def show_pointcloud(filenames: Union[str, list], backend='open3d', opacity=1.0,
             show_pointcloud_open3d(fn)
         elif backend == 'pyvista':
             show_pointcloud_pyvista(fn, opacity=opacity, value=value,
-                                    screenshot_fn=screenshot)
+                                    screenshot_fn=screenshot, clim=clim)
         else:
             raise ValueError("Unknown backend {}".format(backend))
 
@@ -151,7 +151,7 @@ def store_with_color(t_mesh, values, path, vmin=0, vmax=5):
         print(matplotlib.colors.rgb2hex(rgba))
 
 def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
-                            screenshot_fn=None):
+                            screenshot_fn=None, clim=[0.0, 5.0]):
     """
     Show a point cloud stored in a file (e.g. .ply) using pyvista.
 
@@ -189,8 +189,13 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
         except:
             value = nib.freesurfer.io.read_morph_data(value)
 
-        store_with_color(mesh, value, '/mnt/c/Users/Fabian/Desktop/c_mesh.ply',
-                        vmin=1e-7, vmax=0.05)
+        store_with_color(
+            mesh,
+            value,
+            '/mnt/c/Users/Fabian/Desktop/c_mesh.ply',
+            vmin=0,
+            vmax=1
+        )
         # value[value < 0.01] = 2
         # value[value < 0.05] = 1
         # value[~np.isin(value, (1,2))] = 0
@@ -202,8 +207,7 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
             # cmap=['blue', 'red'],
             cmap='autumn_r',
             scalars=value,
-            clim=[1e-7, 0.05]
-            # clim=[0.01, 5.0]
+            clim=clim
         )
         # value[value < 0.01] = 0.01
         # value[np.logical_and(value < 0.05, value > 0.01)] = 0.05
