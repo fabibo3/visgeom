@@ -20,6 +20,10 @@ def vis_mesh():
                         nargs='*',
                         type=str,
                         help="Values to map on vertices.")
+    parser.add_argument('--all_values',
+                        default=None,
+                        type=str,
+                        help="Values to map on vertices of each mesh.")
     parser.add_argument('--opacity',
                         type=float,
                         default=1.0,
@@ -45,6 +49,11 @@ def vis_mesh():
         filenames = args.filenames[0]
     else:
         filenames = args.filenames
+
+    # Use the same value file for all meshes
+    if args.all_values is not None:
+        args.values = len(filenames) * [args.all_values]
+
     show_pointcloud(filenames, backend=args.backend, opacity=args.opacity,
                     values=args.values, clim=args.clim)
 

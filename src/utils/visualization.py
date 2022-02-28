@@ -76,7 +76,7 @@ def show_pointcloud(filenames: Union[str, list], backend='open3d', opacity=1.0,
             filenames = [os.path.join(path, fn) for fn in filenames]
         else:
             filenames = [filenames]
-    filenames = sorted(filenames)
+    # filenames = sorted(filenames)
 
     if values:
         if isinstance(values, str):
@@ -88,7 +88,7 @@ def show_pointcloud(filenames: Union[str, list], backend='open3d', opacity=1.0,
             else:
                 values = [values]
 
-        values = sorted(values)
+        # values = sorted(values)
 
     for i, fn in enumerate(filenames):
         print(f"File: {fn}")
@@ -187,7 +187,7 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
         try:
             value = np.load(value)
         except:
-            value = nib.freesurfer.io.read_morph_data(value)
+            value = nib.freesurfer.io.read_annot(value)[0]
 
         store_with_color(
             mesh,
@@ -196,17 +196,20 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
             vmin=0,
             vmax=1
         )
-        # value[value < 0.01] = 2
-        # value[value < 0.05] = 1
-        # value[~np.isin(value, (1,2))] = 0
+        # Avoid negative colors
+        # value = value + 1
+        # Discrete colormap for parcellation
+        # cmap = plt.get_cmap('RdBu', np.max(value) - np.min(value) + 1)
         plotter.add_mesh(
             cloud,
             opacity=opacity,
             smooth_shading=True,
             # cmap=['blue', 'red', 'yellow'],
-            # cmap=['blue', 'red'],
-            cmap='autumn_r',
-            scalars=value,
+            # cmap='autumn_r',
+            cmap='jet',
+            # cmap=cmap,
+            # scalars=value,
+            scalars=1-value,
             clim=clim
         )
         # value[value < 0.01] = 0.01
@@ -233,7 +236,7 @@ def show_pointcloud_pyvista(filename: str, opacity=1.0, value=None,
 
 def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
                        label_mode='contour', labels_from_mesh: str=None,
-                       output_file=None):
+                       output_file=None, voxel_label=None):
     """
     Show three centered slices of a 3D image
 
@@ -244,7 +247,13 @@ def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
     :param label_mode: Either 'contour' or 'fill'
     :param labels_from_mesh: Path to a mesh that is used as mesh label then.
     :param output_dir: Optionally specify an output file.
+    :param voxel_label: Optionally provide a voxel label file.
     """
+    # Define the image slices to show, e.g. 0.5 means that the slice in the
+    # middle of the image is shown
+    slice_x = 0.25
+    slice_y = 0.5
+    slice_z = 0.5
 
     if isinstance(filenames, str):
         if os.path.isdir(filenames):
@@ -261,18 +270,20 @@ def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
         assert img3D.ndim == 3, "Image dimension not equal to 3."
 
         img1 = img3D.get_fdata() # get np.ndarray
-        img1 = img1[int(img3D.shape[0]/4), :, :]
+        img1 = img1[int(img3D.shape[0] * slice_x), :, :]
         img1 = np.flip(np.rot90(img1), axis=1)
         img2 = img3D.get_fdata() # get np.ndarray
-        img2 = img2[:, int(img3D.shape[1]/2), :]
+        img2 = img2[:, int(img3D.shape[1] * slice_y), :]
         img2 = np.rot90(img2)
         img3 = img3D.get_fdata() # get np.ndarray
-        img3 = img3[:, :, int(img3D.shape[2]/2)]
+        img3 = img3[:, :, int(img3D.shape[2] * slice_z)]
         img3 = np.rot90(img3)
 
         try:
             labels = _get_labels_from_mesh(
-                labels_from_mesh, patch_size=img3D.get_fdata().shape
+                labels_from_mesh,
+                patch_size=img3D.get_fdata().shape,
+                slices=[slice_x, slice_y, slice_z]
             )
         except ValueError:
             labels = None
@@ -285,7 +296,7 @@ def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
         else:
             show_slices([img1, img2, img3], save_path=output_file)
 
-def _get_labels_from_mesh(mesh_labels, patch_size):
+def _get_labels_from_mesh(mesh_labels, patch_size, slices):
     """ Generate voxel labels from mesh prediction(s)."""
 
     # Mesh processing requires pytorch3d
@@ -306,9 +317,9 @@ def _get_labels_from_mesh(mesh_labels, patch_size):
             vertices = normalize_vertices_per_max_dim(vertices, patch_size)
 
         voxelized = voxelize_mesh(vertices, faces, patch_size, 1).squeeze().cpu().numpy()
-        label1.append(voxelized[int(patch_size[0]/2), :, :])
-        label2.append(voxelized[:, int(patch_size[1]/2), :])
-        label3.append(voxelized[:, :, int(patch_size[2]/2)])
+        label1.append(voxelized[int(patch_size[0] * slices[0]), :, :])
+        label2.append(voxelized[:, int(patch_size[1] * slices[1]), :])
+        label3.append(voxelized[:, :, int(patch_size[2] * slices[2])])
 
     return [label1, label2, label3]
 

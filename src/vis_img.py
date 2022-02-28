@@ -38,6 +38,12 @@ def vis_img3D():
                         help="Use a voxelized mesh (given its path) as label"
                         " in the image visualization. If not specified, it is"
                         " searched for segmentation labels of nifity format.")
+    parser.add_argument('--voxel_label',
+                        dest='voxel_label',
+                        type=str,
+                        nargs='+',
+                        default=None,
+                        help="Specify a voxel label file.")
     parser.add_argument('--output',
                         dest='output_file',
                         type=str,
@@ -50,7 +56,8 @@ def vis_img3D():
     else:
         filenames = args.filenames
     show_img_slices_3D(filenames, args.show_label, args.dataset,
-                       args.label_mode, args.labels_from_mesh, args.output_file)
+                       args.label_mode, args.labels_from_mesh,
+                       args.output_file, args.voxel_label)
 
 if __name__ == "__main__":
     vis_img3D()
