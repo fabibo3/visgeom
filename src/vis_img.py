@@ -8,7 +8,7 @@ __email__ = "fabi.bongratz@gmail.com"
 import os
 
 from argparse import ArgumentParser
-from utils.visualization import show_img_slices_3D
+from utils.visualization import show_img_slices_3D, supported_img_norms
 
 def vis_img3D():
     parser = ArgumentParser(description="Visualize 3D image data.")
@@ -38,6 +38,17 @@ def vis_img3D():
                         help="Use a voxelized mesh (given its path) as label"
                         " in the image visualization. If not specified, it is"
                         " searched for segmentation labels of nifity format.")
+    parser.add_argument('--voxel_label',
+                        dest='voxel_label',
+                        type=str,
+                        nargs='+',
+                        default=None,
+                        help="Specify a voxel label file.")
+    parser.add_argument('--normalize',
+                        type=str,
+                        default=None,
+                        help="Normalize the image with one of the supported"
+                        f" types, they are: {supported_img_norms.keys()}")
     parser.add_argument('--output',
                         dest='output_file',
                         type=str,
@@ -50,7 +61,8 @@ def vis_img3D():
     else:
         filenames = args.filenames
     show_img_slices_3D(filenames, args.show_label, args.dataset,
-                       args.label_mode, args.labels_from_mesh, args.output_file)
+                       args.label_mode, args.labels_from_mesh,
+                       args.output_file, args.voxel_label, norm=args.normalize)
 
 if __name__ == "__main__":
     vis_img3D()
