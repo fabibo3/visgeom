@@ -10,8 +10,15 @@ from argparse import ArgumentParser
 
 import numpy as np
 
-from utils.visualization import vis_mesh
-from utils.io import load_mesh, load_vertex_values
+from utils.visualization import vis_mesh, vis_img_slices
+from utils.io import (
+    load_mesh,
+    load_vertex_values,
+    load_img3D,
+)
+
+import logging
+# logging.basicConfig(level=logging.DEBUG)
 
 def main():
     parser = ArgumentParser(description="Visualize 3D meshes.")
@@ -50,6 +57,10 @@ def main():
                         const="/mnt/c/Users/Fabian/Desktop/",
                         default=None,
                         help="Optionally specify a dir where screenshots are stored")
+    parser.add_argument('--label_mode',
+                        type=str,
+                        default='contour',
+                        help="Either 'contour' or 'fill'")
 
     args = parser.parse_args()
 
@@ -76,16 +87,38 @@ def main():
                 cpos=np.load(args.cpos) if args.cpos else None
             )
 
-            return
+        return
 
-    if args.images and not args.meshes:
-        # Show images only
-        pass
-    if args.images and args.meshes:
-        # Show images together with mesh contours
-        pass
+    ### Show images ###
+    if args.imglabels is not None and args.meshes is not None:
+        raise ValueError("Please specify either --meshes or --imglabels")
 
-    raise ValueError("Please specify either --meshes or --images. Exiting.")
+    if args.meshes is None:
+        if args.imglabels is None:
+            args.imglabels = [None] * len(args.images)
+        ### Show 2D slices of images potentially with voxel labels"""
+        for img, label in zip(args.images, args.imglabels):
+            vis_img_slices(
+                img=load_img3D(img),
+                label=load_img3D(label) if label is not None else None,
+                output_file=args.screenshot,
+                label_mode=args.label_mode,
+                title=img
+            )
+
+        return
+
+    # Show image and mesh label
+    for img, label in zip(args.images, args.meshes):
+        vis_img_slices(
+            img=load_img3D(img),
+            label=load_mesh(label),
+            output_file=args.screenshot,
+            label_mode=args.label_mode,
+            title=img
+        )
+
+    return
 
 
 if __name__ == "__main__":

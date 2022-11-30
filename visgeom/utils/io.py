@@ -51,3 +51,7 @@ def load_vertex_values(filename: str):
                 filename.split(".")[-1] == "annot"
             ) else nib.freesurfer.io.read_morph_data(filename)
     return data
+
+def load_img3D(filename: str):
+    """ Load 3D image from file with nibabel """
+    return nib.load(filename)

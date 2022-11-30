@@ -3,9 +3,9 @@
 __author__ = "Fabi Bongratz"
 __email__ = "fabi.bongratz@gmail.com"
 
-import os
 import logging
 from collections.abc import Sequence
+from typing import Union, List
 
 import numpy as np
 # import open3d as o3d # Leads to double logging, uncomment if needed
@@ -13,14 +13,19 @@ import nibabel as nib
 import matplotlib
 import matplotlib.pyplot as plt
 import trimesh
-import torch
 import pyvista as pv
-
 from scipy.stats import zscore
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.measure import find_contours
 
-from utils.coordinate_transform import normalize_vertices_per_max_dim
+from utils.utils import voxelize_mesh, transform_mesh_affine
+
+# Define the image slices to show, e.g. 0.5 means that the slice in the
+# middle of the image is shown
+slice_x = 0.25
+slice_y = 0.5
+slice_z = 0.5
+
 
 def min_max_norm(volume: np.array):
     return (volume - volume.min()) / (volume.max() - volume.min())
@@ -133,118 +138,74 @@ def vis_mesh(mesh: trimesh.Trimesh,
     else:
         plotter.show()
 
-def show_img_slices_3D(filenames: str, show_label=True, dataset="Cortex",
-                       label_mode='contour', labels_from_mesh: str=None,
-                       output_file=None, voxel_label=None, norm=None):
-    """
-    Show three centered slices of a 3D image and a histogram below.
+def _extract_slices(img3D):
+    img1 = img3D
+    img1 = img1[int(img3D.shape[0] * slice_x), :, :]
+    img1 = np.flip(np.rot90(img1), axis=1)
+    img2 = img3D
+    img2 = img2[:, int(img3D.shape[1] * slice_y), :]
+    img2 = np.rot90(img2)
+    img3 = img3D
+    img3 = img3[:, :, int(img3D.shape[2] * slice_z)]
+    img3 = np.rot90(img3)
 
-    :param str filenames: A list of files or a directory name.
-    :param bool show_label: Try to find label corresponding to image and show
-    image and label together if possible.
-    :param dataset: Either 'Hippocampus' or 'Cortex'
+    return [img1, img2, img3]
+
+def vis_img_slices(img: nib.Nifti1Image,
+                   label: Union[nib.Nifti1Image, trimesh.Trimesh],
+                   label_mode='fill',
+                   output_file=None,
+                   norm=None,
+                   title="Slices"):
+    """
+    Show three centered slices of a 3D image and a histogram below with
+    potential labels from mesh or voxel segmentation.
+
+    :param img: The image to show
+    :param label: A sequence of image or mesh labels
     :param label_mode: Either 'contour' or 'fill'
-    :param labels_from_mesh: Path to a mesh that is used as mesh label then.
     :param output_dir: Optionally specify an output file.
-    :param voxel_label: Optionally provide a voxel label file.
+    :param norm: Optionally normalize the image with one of the norms supported
+    by 'supported_img_norms'
     """
-    # Define the image slices to show, e.g. 0.5 means that the slice in the
-    # middle of the image is shown
-    slice_x = 0.25
-    slice_y = 0.5
-    slice_z = 0.5
 
-    if isinstance(filenames, str):
-        if os.path.isdir(filenames):
-            path = filenames
-            filenames = os.listdir(path)
-            filenames.sort()
-            filenames = [os.path.join(path, fn) for fn in filenames]
-        else:
-            filenames = [filenames]
+    img3D = img.get_fdata()
+    if norm is not None:
+        img3D = supported_img_norms[norm](img3D)
 
-    for fn in filenames:
-        img3D = nib.load(fn)
-        print(f"Loading image {fn}...")
-        assert img3D.ndim == 3, "Image dimension not equal to 3."
+    img1, img2, img3 = _extract_slices(img3D)
 
-        img3D = img3D.get_fdata()
-        if norm is not None:
-            img3D = supported_img_norms[norm](img3D)
-
-        img1 = img3D
-        img1 = img1[int(img3D.shape[0] * slice_x), :, :]
-        img1 = np.flip(np.rot90(img1), axis=1)
-        img2 = img3D
-        img2 = img2[:, int(img3D.shape[1] * slice_y), :]
-        img2 = np.rot90(img2)
-        img3 = img3D
-        img3 = img3[:, :, int(img3D.shape[2] * slice_z)]
-        img3 = np.rot90(img3)
-
+    if label is not None:
         try:
-            labels = _get_labels_from_mesh(
-                labels_from_mesh,
-                patch_size=img3D.shape,
-                slices=[slice_x, slice_y, slice_z]
+            # Mesh labels
+            label.vertices, label.faces = transform_mesh_affine(
+                label.vertices, label.faces, np.linalg.inv(img.affine)
             )
-        except ValueError:
-            labels = None
+            label = _extract_slices(
+                voxelize_mesh(
+                    label.vertices, label.faces, img3D.shape
+                )
+            )
+        except AttributeError as e:
+            logging.debug(e)
+            # Voxel label
+            label = _extract_slices(label.get_fdata())
 
-        if labels is not None and show_label:
-            # Read and show ground truth
-            show_slices([img1, img2, img3], labels=labels,
-                        label_mode=label_mode, save_path=output_file,
-                        whole_volume=img3D, name=fn.split("/")[-1])
+    _show_slices(
+        [img1, img2, img3],
+        labels=label,
+        save_path=output_file,
+        label_mode=label_mode,
+        whole_volume=img3D,
+        name=title
+    )
 
-        else:
-            show_slices([img1, img2, img3], save_path=output_file,
-                        whole_volume=img3D, name=fn.split("/")[-1])
-
-def _get_labels_from_mesh(mesh_labels, patch_size, slices):
-    """ Generate voxel labels from mesh prediction(s)."""
-
-    # Mesh processing requires pytorch3d
-    from utils.utils import voxelize_mesh
-
-    if not isinstance(mesh_labels, Sequence):
-        mesh_labels = [mesh_labels]
-
-    label1, label2, label3 = [], [], []
-    for ml in mesh_labels:
-        # trimesh.load does not distinguish structures in mesh
-        mesh = trimesh.load(ml)
-        vertices = torch.from_numpy(mesh.vertices) # Vx3
-        faces = torch.from_numpy(mesh.faces) # Fx3
-        # Potentially normalize: if the mean of all vertex coordinates is > 2,
-        # it is assumed that the coordinates are not normalized
-        if vertices.mean() > 2:
-            vertices = normalize_vertices_per_max_dim(vertices, patch_size)
-
-        voxelized = voxelize_mesh(vertices, faces, patch_size, 1).squeeze().cpu().numpy()
-        label1.append(voxelized[int(patch_size[0] * slices[0]), :, :])
-        label2.append(voxelized[:, int(patch_size[1] * slices[1]), :])
-        label3.append(voxelized[:, :, int(patch_size[2] * slices[2])])
-
-    return [label1, label2, label3]
-
-
-def show_slices(slices, labels=None, save_path=None, label_mode='contour',
-                whole_volume=None, name=None):
+def _show_slices(slices, labels, save_path, label_mode, whole_volume, name):
     """
     Visualize image slices in a row. If whole_volume is given, a histogram is
-    also compute from it.
+    also computed from it.
 
-    :param array-like slices: The image slices to visualize.
-    :param array-like labels (optional): The image segmentation label slices.
     """
-
-    assert label_mode in ('contour', 'fill')
-    colors = ('blue', 'green', 'cyan', 'yellow')
-
-    # TMP
-    slices = [slices[0]]
-    whole_volume = None
 
     n_rows = 1 if whole_volume is None else 2
     fig, axs = plt.subplots(n_rows, len(slices))
@@ -252,24 +213,27 @@ def show_slices(slices, labels=None, save_path=None, label_mode='contour',
         axs = [axs]
 
     for i, s in enumerate(slices):
-        axs[0].imshow(s, cmap="gray")
-        # axs[0, i].imshow(s, cmap="gray")
+        axs[0, i].imshow(s, cmap="gray")
 
     if labels is not None:
         for i, l in enumerate(labels):
-            if not isinstance(l, Sequence):
-                l_ = [l]
-            else:
-                l_ = l
+            l = l.astype(np.uint8)
+            if len(np.unique(l)) > 2:
+                print(f"Available labels: {np.unique(l)}, please choose one:")
+                x = input()
+                l[l != int(x)] = 0
+            l[l != 0] = 1
 
-            for ll, col in zip(l_, colors):
-                if label_mode == 'fill':
-                    axs[0, i].imshow(ll, cmap="OrRd", alpha=0.3)
-                else:
-                    contours = find_contours(ll, np.max(ll)/2)
-                    for c in contours:
-                        axs[0, i].plot(c[:, 1], c[:, 0], linewidth=0.5,
-                                    color=col)
+            if label_mode == 'fill':
+                axs[0, i].imshow(l, cmap="Reds", alpha=0.3)
+
+            elif label_mode == 'contour':
+                contours = find_contours(l, np.max(l)/2)
+                for c in contours:
+                    axs[0, i].plot(c[:, 1], c[:, 0], linewidth=0.5,
+                                   color='red')
+            else:
+                raise ValueError(f"Unknown label mode '{label_mode}'")
 
     # Histogram
     if whole_volume is not None:
@@ -280,19 +244,13 @@ def show_slices(slices, labels=None, save_path=None, label_mode='contour',
         axbig.set_title("Histogram of volume")
         axbig.hist(whole_volume.flatten())
 
-    if name is not None:
-        fig.suptitle(name)
-    else:
-        plt.suptitle("Image Slices")
-
+    fig.suptitle(name)
     fig.tight_layout()
 
     # save_path = "/mnt/c/Users/Fabian/Desktop/" + name.replace(".nii.gz", ".png")
-    if save_path is None:
-        plt.show()
-    else:
+    if save_path is not None:
         plt.savefig(save_path)
-        plt.close()
+    plt.show()
 
 def show_img_with_contour(img, vertices, edges, save_path=None):
     if vertices.ndim != 2 or edges.ndim != 2:
@@ -309,48 +267,6 @@ def show_img_with_contour(img, vertices, edges, save_path=None):
     else:
         plt.savefig(save_path)
         plt.close()
-
-def show_difference(img_1, img_2, save_path=None):
-    """
-    Visualize the difference of two 3D images in the center axes.
-
-    :param array-like img_1: The first image
-    :param array-like img_2: The image that should be compared to the first one
-    :param save_path: Where the image is exported to
-    """
-    shape_1 = img_1.shape
-    img_1_slices = [img_1[shape_1[0]//2, :, :],
-                    img_1[:, shape_1[1]//2, :],
-                    img_1[:, :, shape_1[2]//2]]
-    shape_2 = img_2.shape
-    assert shape_1 == shape_2, "Compared images should be of same shape."
-    img_2_slices = [img_2[shape_2[0]//2, :, :],
-                    img_2[:, shape_2[1]//2, :],
-                    img_2[:, :, shape_2[2]//2]]
-    diff = [(i1 != i2).long() for i1, i2 in zip(img_1_slices, img_2_slices)]
-
-    fig, axs = plt.subplots(1, len(img_1_slices))
-    if len(img_1_slices) == 1:
-        axs = [axs]
-
-    for i, s in enumerate(img_1_slices):
-        axs[i].imshow(s, cmap="gray")
-
-    for i, (l, ax) in enumerate(zip(diff, axs)):
-        im = ax.imshow(l, cmap="OrRd", alpha=0.6)
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        plt.colorbar(im, cax=cax)
-
-    fig.tight_layout()
-
-    plt.suptitle("Difference")
-    if save_path is None:
-        plt.show()
-    else:
-        plt.savefig(save_path)
-        plt.close()
-
 
 supported_img_norms = {
     'min_max': min_max_norm,
