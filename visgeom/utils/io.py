@@ -7,6 +7,7 @@ __email__ = "fabi.bongratz@gmail.com"
 import logging
 
 import trimesh
+import numpy as np
 import nibabel as nib
 
 def load_mesh(filename: str):
@@ -43,12 +44,13 @@ def load_vertex_values(filename: str):
     """
     try:
         data = np.load(filename)
-    except:
+    except ValueError:
         try:
-            data = nib.load(filename).agg_data()
+            # data = nib.load(filename).agg_data()
+            data = nib.load(filename).get_fdata().squeeze()
         except:
             data = nib.freesurfer.io.read_annot(filename)[0] if (
-                filename.split(".")[-1] == "annot"
+                "annot" in filename
             ) else nib.freesurfer.io.read_morph_data(filename)
     return data
 
