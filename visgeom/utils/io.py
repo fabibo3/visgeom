@@ -46,8 +46,10 @@ def load_vertex_values(filename: str):
         data = np.load(filename)
     except ValueError:
         try:
-            # data = nib.load(filename).agg_data()
-            data = nib.load(filename).get_fdata().squeeze()
+            data = nib.load(filename).agg_data()
+            if len(data) > 1:
+                data = np.stack(data)
+            # data = nib.load(filename).get_fdata().squeeze()
         except:
             data = nib.freesurfer.io.read_annot(filename)[0] if (
                 "annot" in filename

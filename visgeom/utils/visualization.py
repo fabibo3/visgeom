@@ -3,6 +3,7 @@
 __author__ = "Fabi Bongratz"
 __email__ = "fabi.bongratz@gmail.com"
 
+import os
 import logging
 from collections.abc import Sequence
 from typing import Union, List
@@ -19,6 +20,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.measure import find_contours
 
 from utils.utils import voxelize_mesh, transform_mesh_affine
+
+module_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Define the image slices to show, e.g. 0.5 means that the slice in the
 # middle of the image is shown
@@ -57,7 +60,10 @@ def vis_mesh(mesh: trimesh.Trimesh,
              title="Pyvista plot",
              cpos=None,
              point_labels=False,
-             cmap_name="jet", #tab20, Wistia
+             # cmap_name="autumn", # For group study
+             # cmap_name="RdYlGn_r", # For curvature
+             cmap_name="jet",
+             # cmap_name='tab20b', # Parcellation
              interactive_cpos=True):
     """
     Show trimesh meshes with pyvista and optionally map values onto the
@@ -76,9 +82,12 @@ def vis_mesh(mesh: trimesh.Trimesh,
         mesh.faces
     ])
     cloud = pv.PolyData(mesh.vertices, faces)
+    print(cloud)
     plotter = pv.Plotter()
     plotter.add_title(title, font_size=6)
 
+    if cpos is not None:
+        plotter.camera_position = cpos
     logging.debug("Camera: ")
     logging.debug(plotter.camera_position)
     plotter.set_background(color='white')
@@ -90,16 +99,19 @@ def vis_mesh(mesh: trimesh.Trimesh,
             # show_edges=True,
         )
     else:
+        logging.info("Unique vertex values:")
+        logging.info(np.unique(vertex_values))
         cmap = plt.get_cmap(cmap_name)
         norm = matplotlib.colors.Normalize(vmin=clim[0], vmax=clim[1])
+
         plotter.add_mesh(
             cloud,
             smooth_shading=True,
             specular=0.5,
             cmap=cmap,
-            scalars=vertex_values,
+            scalars=vertex_values.copy(), # Plotter seems to change values sometimes
             clim=clim,
-            # above_color='red',
+            # below_color='gray',
             # rgb=True,
             # clim=(np.nanmin(value), np.nanmax(value)),
             # scalars=1-value,
@@ -123,17 +135,23 @@ def vis_mesh(mesh: trimesh.Trimesh,
         plotter.add_point_labels(points, labels)
     if screenshot:
         # Store mesh with color s.t. it can be opened in MeshLab
-        store_with_color(
-            mesh,
-            norm(vertex_values), # Normalize values to the same range as the shown plot
-            cmap,
-            path=screenshot.replace("png", "ply")
-        )
+        if vertex_values is not None:
+            store_with_color(
+                mesh,
+                norm(vertex_values), # Normalize values to the same range as the shown plot
+                cmap,
+                path=screenshot.replace("png", "ply")
+            )
+        else:
+            mesh.export(screenshot.replace("png", "ply"), file_type='ply')
+        # Iterate through all meshes without waiting for user
+        # plotter.show(screenshot=screenshot, interactive=False, auto_close=True)
+        # Wait for user to close window
         plotter.show(screenshot=screenshot)
         logging.info("Stored a screenshot at %s", screenshot)
     elif interactive_cpos:
         cpos = plotter.show(interactive=True, auto_close=True, return_cpos=True)
-        logging.info(cpos)
+        np.save(os.path.join(module_dir, "../../cposes/last_cpos.npy"), cpos)
         plotter.close()
     else:
         plotter.show()

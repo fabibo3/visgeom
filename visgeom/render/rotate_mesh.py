@@ -9,16 +9,18 @@ from argparse import ArgumentParser
 import torch
 import numpy as np
 import pyvista as pv
-from pytorch3d.ops import knn_points
+# from pytorch3d.ops import knn_points
 
 title = "White Matter"
 # title = "Pial"
 
-file1 = "/home/fabi/remote/experiments/lrz/exp_2/test_template_168058_OASIS/meshes/OAS1_0044_MR1_epoch95_struc0_meshpred.ply"
-file2 = "/home/fabi/remote/experiments/lrz/exp_2/test_template_168058_OASIS/meshes/OAS1_0044_MR1_epoch95_struc1_meshpred.ply"
+# file1 = "/home/fabi/remote/experiments/lrz/exp_2/test_template_168058_OASIS/meshes/OAS1_0044_MR1_epoch95_struc0_meshpred.ply"
+# file2 = "/home/fabi/remote/experiments/lrz/exp_2/test_template_168058_OASIS/meshes/OAS1_0044_MR1_epoch95_struc1_meshpred.ply"
+file1 = "/mnt/ai-med-nas/Projects/Vox2Cortex/V2C-Flow/v2c-flow_experiments/lrz_exp_211_extended_2/test_template_fsaverage-smooth-no-parc_ADNI_CSR_large_n_5/meshes/32409_epoch102_struc0_meshpred.ply"
+file2 = "/mnt/ai-med-nas/Projects/Vox2Cortex/V2C-Flow/v2c-flow_experiments/lrz_exp_211_extended_2/test_template_fsaverage-smooth-no-parc_ADNI_CSR_large_n_5/meshes/32409_epoch102_struc1_meshpred.ply"
 
-gtfile1 = "/home/fabi/remote_data/OASIS/CSR_data/OAS1_0044_MR1/lh_white.ply"
-gtfile2 = "/home/fabi/remote_data/OASIS/CSR_data/OAS1_0044_MR1/rh_white.ply"
+# gtfile1 = "/home/fabi/remote_data/OASIS/CSR_data/OAS1_0044_MR1/lh_white.ply"
+# gtfile2 = "/home/fabi/remote_data/OASIS/CSR_data/OAS1_0044_MR1/rh_white.ply"
 
 def rot_mat(angle, axis):
     """ Get a rotation matrix from angle in rad """
@@ -58,7 +60,7 @@ def vis_mesh_rotating(
     """ Create a video with rotating meshes. """
 
     # Custom theme
-    pv.set_plot_theme('doc')
+    pv.set_plot_theme('document')
 
     # Read input meshes
     cloud = pv.read(files[0])

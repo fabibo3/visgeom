@@ -18,7 +18,7 @@ from utils.io import (
 )
 
 import logging
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 def main():
     parser = ArgumentParser(description="Visualize 3D meshes.")
@@ -78,14 +78,21 @@ def main():
             raise ValueError(f"Number of meshes ({len(meshes)}) and number of mesh value files should either be 1 or equal.")
 
         for i, (m, v) in enumerate(zip(meshes, values)):
-            vis_mesh(
-                load_mesh(m),
-                vertex_values=load_vertex_values(v) if v else None,
-                screenshot=os.path.join(args.screenshot, f"screenshot_{i}.png") if args.screenshot else None,
-                clim=args.clim,
-                title=": ".join([m, v]) if v else m,
-                cpos=np.load(args.cpos) if args.cpos else None
-            )
+            if v is not None:
+                vertex_values = load_vertex_values(v)
+                if vertex_values.ndim == 1:
+                    vertex_values = np.expand_dims(vertex_values, 0)
+            else:
+                vertex_values = [None]
+            for vv in vertex_values:
+                vis_mesh(
+                    load_mesh(m),
+                    screenshot=os.path.join(args.screenshot, f"screenshot_{i}.png") if args.screenshot else None,
+                    clim=args.clim,
+                    vertex_values=vv,
+                    title=": ".join([m, v]) if v else m,
+                    cpos=np.load(args.cpos, allow_pickle=True).item() if args.cpos else None
+                )
 
         return
 
