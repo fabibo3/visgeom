@@ -151,7 +151,7 @@ def vis_mesh(mesh: trimesh.Trimesh,
         logging.info("Stored a screenshot at %s", screenshot)
     elif interactive_cpos:
         cpos = plotter.show(interactive=True, auto_close=True, return_cpos=True)
-        np.save(os.path.join(module_dir, "../../cposes/last_cpos.npy"), cpos)
+        np.save(os.path.join(module_dir, "../cposes/last_cpos.npy"), cpos)
         plotter.close()
     else:
         plotter.show()
