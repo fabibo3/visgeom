@@ -6,3 +6,6 @@ misc/
 to_check/
 tmp/
 *.pdf
+last_cpos.npy
+input/
+outputs/
