@@ -19,7 +19,7 @@ from scipy.stats import zscore
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.measure import find_contours
 
-from utils.utils import voxelize_mesh, transform_mesh_affine
+from visgeom.utils.utils import voxelize_mesh, transform_mesh_affine
 
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -108,9 +108,10 @@ def vis_mesh(mesh: trimesh.Trimesh,
             cloud,
             smooth_shading=True,
             specular=0.5,
-            cmap=cmap,
+            # cmap=cmap,
             scalars=vertex_values.copy(), # Plotter seems to change values sometimes
-            clim=clim,
+            rgb=True,
+            # clim=clim,
             # below_color='gray',
             # rgb=True,
             # clim=(np.nanmin(value), np.nanmax(value)),

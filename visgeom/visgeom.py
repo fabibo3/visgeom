@@ -10,8 +10,8 @@ from argparse import ArgumentParser
 
 import numpy as np
 
-from utils.visualization import vis_mesh, vis_img_slices
-from utils.io import (
+from visgeom.utils.visualization import vis_mesh, vis_img_slices
+from visgeom.utils.io import (
     load_mesh,
     load_vertex_values,
     load_img3D,
@@ -83,16 +83,27 @@ def main():
                 if vertex_values.ndim == 1:
                     vertex_values = np.expand_dims(vertex_values, 0)
             else:
-                vertex_values = [None]
-            for vv in vertex_values:
+                vertex_values = np.array([None])
+            if vertex_values.ndim == 2 and vertex_values.shape[-1] == 3:
+                # Interpret as rgb
                 vis_mesh(
                     load_mesh(m),
                     screenshot=os.path.join(args.screenshot, f"screenshot_{i}.png") if args.screenshot else None,
                     clim=args.clim,
-                    vertex_values=vv,
+                    vertex_values=vertex_values,
                     title=": ".join([m, v]) if v else m,
                     cpos=np.load(args.cpos, allow_pickle=True).item() if args.cpos else None
                 )
+            else:
+                for vv in vertex_values:
+                    vis_mesh(
+                        load_mesh(m),
+                        screenshot=os.path.join(args.screenshot, f"screenshot_{i}.png") if args.screenshot else None,
+                        clim=args.clim,
+                        vertex_values=vv,
+                        title=": ".join([m, v]) if v else m,
+                        cpos=np.load(args.cpos, allow_pickle=True).item() if args.cpos else None
+                    )
 
         return
 

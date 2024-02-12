@@ -1,4 +1,4 @@
-name: vis_pyvista
+name: visgeom
 channels:
   - pytorch
   - defaults

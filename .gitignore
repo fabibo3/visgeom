@@ -9,3 +9,4 @@ tmp/
 last_cpos.npy
 input/
 outputs/
+visgeom.egg-info/
