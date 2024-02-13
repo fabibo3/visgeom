@@ -104,14 +104,21 @@ def vis_mesh(mesh: trimesh.Trimesh,
         cmap = plt.get_cmap(cmap_name)
         norm = matplotlib.colors.Normalize(vmin=clim[0], vmax=clim[1])
 
+        if vertex_values.ndim == 2:
+            plot_params = {
+                'rgb': True
+            }
+        else:
+            plot_params = {
+                'cmap': cmap,
+                'clim': clim
+            }
         plotter.add_mesh(
             cloud,
             smooth_shading=True,
             specular=0.5,
-            # cmap=cmap,
             scalars=vertex_values.copy(), # Plotter seems to change values sometimes
-            rgb=True,
-            # clim=clim,
+            **plot_params,
             # below_color='gray',
             # rgb=True,
             # clim=(np.nanmin(value), np.nanmax(value)),
