@@ -9,6 +9,7 @@ import os
 from argparse import ArgumentParser
 
 import numpy as np
+import nibabel.freesurfer.io as fsio
 
 from visgeom.utils.visualization import vis_mesh, vis_img_slices
 from visgeom.utils.io import (
@@ -37,6 +38,9 @@ def main():
                         type=str,
                         default=None,
                         help="Values to map on vertices.")
+    parser.add_argument('--gray_unknown',
+                        action='store_true',
+                        help="Gray unknown region based on the fsaverage template")
     parser.add_argument('--imglabels',
                         nargs='+',
                         type=str,
@@ -63,6 +67,15 @@ def main():
                         help="Either 'contour' or 'fill'")
 
     args = parser.parse_args()
+
+    if args.gray_unknown:
+        labels, ctab, names = fsio.read_annot('/mnt/ai-med-nas/Software/Freesurfer72/subjects/fsaverage5/label/lh.aparc.annot', orig_ids=True)
+        names = [name.decode() for name in names]
+        id_to_name = {k: v for k, v in zip(ctab[:, -1], names)}
+        parc = np.array(list(map(lambda x: id_to_name[x], labels)))
+        gray_mask = np.isin(parc, ('unknown', 'corpuscallosum'))
+    else:
+        gray_mask = None
 
     if args.meshes and not args.images:
         ### Show meshes only ###
@@ -102,7 +115,8 @@ def main():
                         clim=args.clim,
                         vertex_values=vv,
                         title=": ".join([m, v]) if v else m,
-                        cpos=np.load(args.cpos, allow_pickle=True).item() if args.cpos else None
+                        cpos=np.load(args.cpos, allow_pickle=True).item() if args.cpos else None,
+                        gray_mask=gray_mask,
                     )
 
         return

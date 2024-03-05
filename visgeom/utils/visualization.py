@@ -62,8 +62,10 @@ def vis_mesh(mesh: trimesh.Trimesh,
              point_labels=False,
              # cmap_name="autumn", # For group study
              # cmap_name="RdYlGn_r", # For curvature
-             cmap_name="jet",
+             cmap_name="jet_r",  # Standard cth
+             # cmap_name="plasma",
              # cmap_name='tab20b', # Parcellation
+             gray_mask=None,
              interactive_cpos=True):
     """
     Show trimesh meshes with pyvista and optionally map values onto the
@@ -113,16 +115,27 @@ def vis_mesh(mesh: trimesh.Trimesh,
                 'cmap': cmap,
                 'clim': clim
             }
+        if gray_mask is not None:
+            vertex_values = np.clip(vertex_values, clim[0] + 0.01, clim[1] - 0.01)
+            vertex_values[gray_mask] = clim[1] + 1
+            above_color = 'gray'
+        else:
+            above_color = None
         plotter.add_mesh(
             cloud,
             smooth_shading=True,
             specular=0.5,
             scalars=vertex_values.copy(), # Plotter seems to change values sometimes
             **plot_params,
-            # below_color='gray',
+            show_scalar_bar=False,
+            above_color=above_color,
             # rgb=True,
             # clim=(np.nanmin(value), np.nanmax(value)),
             # scalars=1-value,
+        )
+        plotter.add_scalar_bar(
+            vertical=True,
+            label_font_size=32,
         )
         # value[value < 0.01] = 0.01
         # value[np.logical_and(value < 0.05, value > 0.01)] = 0.05
