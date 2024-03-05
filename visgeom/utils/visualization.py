@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import trimesh
 import pyvista as pv
 from scipy.stats import zscore
+from scipy.sparse import coo_matrix
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.measure import find_contours
 
@@ -66,6 +67,7 @@ def vis_mesh(mesh: trimesh.Trimesh,
              # cmap_name="plasma",
              # cmap_name='tab20b', # Parcellation
              gray_mask=None,
+             smoothing=0,
              interactive_cpos=True):
     """
     Show trimesh meshes with pyvista and optionally map values onto the
@@ -115,12 +117,22 @@ def vis_mesh(mesh: trimesh.Trimesh,
                 'cmap': cmap,
                 'clim': clim
             }
+
+        # Smoothing based on laplacian operator, should be done before
+        # potentially masking regions with gray values
+        if smoothing > 0:
+            print(f"Applying {smoothing} smoothing iterations to the vertex values.")
+            lap = trimesh.smoothing.laplacian_calculation(mesh)
+            for _ in range(smoothing):
+                vertex_values = lap * vertex_values
+
         if gray_mask is not None:
             vertex_values = np.clip(vertex_values, clim[0] + 0.01, clim[1] - 0.01)
             vertex_values[gray_mask] = clim[1] + 1
             above_color = 'gray'
         else:
             above_color = None
+
         plotter.add_mesh(
             cloud,
             smooth_shading=True,

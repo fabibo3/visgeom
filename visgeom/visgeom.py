@@ -46,6 +46,10 @@ def main():
                         type=str,
                         default=None,
                         help="Segmentation maps.")
+    parser.add_argument('--smooth',
+                        type=int,
+                        default=0,
+                        help="Number of smoothing iterations applied to the vertex values with a Laplacian kernel.")
     parser.add_argument('--clim',
                         type=float,
                         default=None,
@@ -117,6 +121,7 @@ def main():
                         title=": ".join([m, v]) if v else m,
                         cpos=np.load(args.cpos, allow_pickle=True).item() if args.cpos else None,
                         gray_mask=gray_mask,
+                        smoothing=args.smooth,
                     )
 
         return
