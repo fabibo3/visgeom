@@ -7,6 +7,6 @@ to_check/
 tmp/
 *.pdf
 last_cpos.npy
-input/
+inputs/
 outputs/
 visgeom.egg-info/
