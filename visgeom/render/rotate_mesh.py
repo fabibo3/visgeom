@@ -1,5 +1,6 @@
 
-""" Create a video with rotating meshes. """
+""" Create a video with rotating meshes. See also rotate_mesh_thickness.py, there
+is sometimes a problem of the video getting stuck at the first frame. """
 
 __author__ = "Fabi Bongratz"
 __email__ = "fabi.bongratz@gmail.com"
@@ -79,7 +80,9 @@ def vis_mesh_rotating(
     # Center w.r.t. rotation axis
     cloud.points[:, rotation_axis] -= cloud.points[:, rotation_axis].mean()
 
-    plotter = pv.Plotter()
+    # Seems to be cructial to add off_screen here although it's not in the
+    # original example (https://github.com/pyvista/pyvista/issues/5130)
+    plotter = pv.Plotter(off_screen=True)
     plotter.open_movie(out_fn)
     plotter.add_title(title)
 

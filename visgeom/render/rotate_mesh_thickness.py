@@ -4,6 +4,8 @@
 __author__ = "Fabi Bongratz"
 __email__ = "fabi.bongratz@gmail.com"
 
+import os
+import sys
 from argparse import ArgumentParser
 
 import time
@@ -11,24 +13,25 @@ import trimesh
 import numpy as np
 import pyvista as pv
 import nibabel.freesurfer.io as fsio
+from tqdm import tqdm
 
-title = "Cortical Thickness"
+title = "Cortical Thickness 20230513_123320s401a1004"
 # title = "Pial"
 
 fs_files = [
-    "/mnt/ai-med-nas/Data_Neuro/ADNI_SEG/no_reg/FS72/223011/surf/lh.inflated",
-    "/mnt/ai-med-nas/Data_Neuro/ADNI_SEG/no_reg/FS72/223011/surf/rh.inflated"
+    "/mnt/ai-med-nas/Software/Freesurfer72/subjects/fsaverage/surf/lh.inflated",
+    "/mnt/ai-med-nas/Software/Freesurfer72/subjects/fsaverage/surf/rh.inflated",
 ]
 
-cthfile1 = "/mnt/ai-med-nas/Data_Neuro/ADNI_SEG/no_reg/FS72/223011/surf/lh.thickness"
-cthfile2 = "/mnt/ai-med-nas/Data_Neuro/ADNI_SEG/no_reg/FS72/223011/surf/rh.thickness"
+cthfile1 = "/mnt/bear/work/SUBJECTS_DIR/20230513_123320s401a1004/surf/lh.bi_thickness"
+cthfile2 = "/mnt/bear/work/SUBJECTS_DIR/20230513_123320s401a1004/surf/rh.bi_thickness"
 
 for fn in fs_files:
     v, f = fsio.read_geometry(fn)
-    _ = trimesh.Trimesh(vertices=v, faces=f, process=False).export("/home/fabi/work/med-vis/inputs/" + fn.split('/')[-1] + ".ply")
+    _ = trimesh.Trimesh(vertices=v, faces=f, process=False).export("/home/fabi/work/visgeom/inputs/" + fn.split('/')[-1] + ".ply")
 
-file1 = "/home/fabi/work/med-vis/inputs/lh.inflated.ply"
-file2 = "/home/fabi/work/med-vis/inputs/rh.inflated.ply"
+file1 = "/home/fabi/work/visgeom/inputs/lh.inflated.ply"
+file2 = "/home/fabi/work/visgeom/inputs/rh.inflated.ply"
 
 def rot_mat(angle, axis):
     """ Get a rotation matrix from angle in rad """
@@ -58,6 +61,10 @@ def vis_mesh_rotating(
 ):
     """ Create a video with rotating meshes. """
 
+    if out_fn != "video_out.mp4" and os.path.exists(out_fn):
+        print("Path already exists!")
+        sys.exit(0)
+
     # Custom theme
     pv.set_plot_theme('document')
 
@@ -76,7 +83,9 @@ def vis_mesh_rotating(
     # Center w.r.t. rotation axis
     cloud.points[:, rotation_axis] -= cloud.points[:, rotation_axis].mean()
 
-    plotter = pv.Plotter()
+    # Seems to be cructial to add off_screen here although it's not in the
+    # original example (https://github.com/pyvista/pyvista/issues/5130)
+    plotter = pv.Plotter(off_screen=True)
     plotter.open_movie(out_fn)
 
     plotter.add_mesh(
@@ -93,8 +102,8 @@ def vis_mesh_rotating(
 
     # Rotate and write frames
     step_size = 2 # Degree
-    for i in range(0, 360, step_size):
-        rad_angle = 2 * np.pi * step_size / 360
+    rad_angle = 2 * np.pi * step_size / 360
+    for i in tqdm(range(0, 360, step_size)):
         cloud.points = cloud.points @ rot_mat(rad_angle, rotation_axis).T
         plotter.write_frame()
 
@@ -104,8 +113,13 @@ def vis_mesh_rotating(
 
 
 if __name__ == '__main__':
+    # conda env create -n visgeom_video python=3.9
+    # pip install imageio[ffmpeg]==2.31.4
+    # pip install pyvista
+    # pip install trimesh nibabel tqdm
+    print("Need environment 'visgeom_video'!")
     vis_mesh_rotating(
         [file1, file2],
         [cthfile1, cthfile2],
-        out_fn="/home/fabi/work/med-vis/outputs/rotating_cth.mp4"
+        out_fn="/home/fabi/work/visgeom/outputs/rotating_20230513_123320s401a1004.mp4"
     )
