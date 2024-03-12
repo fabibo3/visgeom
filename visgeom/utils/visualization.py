@@ -63,7 +63,7 @@ def vis_mesh(mesh: trimesh.Trimesh,
              point_labels=False,
              # cmap_name="autumn", # For group study
              # cmap_name="RdYlGn_r", # For curvature
-             cmap_name="jet_r",  # Standard cth
+             cmap_name="jet",  # Standard cth
              # cmap_name="plasma",
              # cmap_name='tab20b', # Parcellation
              gray_mask=None,
