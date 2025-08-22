@@ -1,0 +1,46 @@
+name: visgeom
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - scikit-image
+  - nibabel
+  - pyvista
+  - pywavelets
+  - pillow
+  - pydicom
+  - networkx
+  - dask
+  - cloudpickle
+  - packaging
+  - cycler
+  - kiwisolver
+  - toolz
+  - typing_extensions
+  - tornado
+  - future
+  - fsspec
+  - locket
+  - partd
+  - scooby
+  - yaml
+  - imageio
+  - freetype
+  - libpng
+  - libtiff
+  - zlib
+  - lz4-c
+  - libwebp
+  - h5py
+  - hdf4
+  - pygments
+  - pip
+  - pytorch
+  - torchvision
+  - torchaudio

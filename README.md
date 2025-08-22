@@ -12,6 +12,8 @@ cd visgeom
 conda env create -f requirements.yml
 conda activate visgeom
 ```
+Note: If you are running MacOS on an Apple Silicon device, use `requirements_arm.yml`.
+
 Install the `visgeom` package in editable mode
 ```
 pip install -e .
