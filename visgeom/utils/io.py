@@ -25,7 +25,7 @@ def load_mesh(filename: str):
 
     try:
         mesh = trimesh.load(filename, process=False)
-    except ValueError:
+    except:
         try:
             gii_mesh = nib.load(filename).agg_data()
             mesh = trimesh.Trimesh(gii_mesh[0], gii_mesh[1], process=False)
