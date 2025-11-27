@@ -23,3 +23,8 @@ Visualize meshes, e.g., for a brain with cortical thickness
 visgeom --meshes /path/to/lh.inflated --meshvalues /path/to/lh.thickness.npy --clim 1 4
 ```
 When given multiple meshes or meshvalues, they are visualized sequentially.
+
+Plotting all views and both hemispheres at a time is now also possible with
+```
+plot-cortex --subject_dir <SUBJECT_DIR> --output_dir <OUTPUT_DIR>
+```
