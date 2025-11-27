@@ -26,7 +26,7 @@ cpos_dir = os.path.join(VISGEOM_PATH, 'cposes/study_cposes')
 
 scalar_bar_params = {
     'vertical': True,
-    'width': 0.1,
+    'width': 0.2,
     'height': 0.8,
     'position_x': 0.5,
     'position_y': 0.1,
@@ -195,33 +195,33 @@ def main():
                     th_rh = lap_rh.dot(th_rh)
             if ref == 'absolute':
                 if args.filetype == 'thickness':
-                    clim = (1.02, 4)
+                    clim = (1.01, 4)
                     lh_mesh['cth'] = np.clip(th_lh, *clim)
                     rh_mesh['cth'] = np.clip(th_rh, *clim)
                     # Set undefined region to gray
-                    lh_mesh['cth'][undef_mask['lh']] = 1.0
-                    rh_mesh['cth'][undef_mask['rh']] = 1.0
+                    lh_mesh['cth'][undef_mask['lh']] = 0.99
+                    rh_mesh['cth'][undef_mask['rh']] = 0.99
                     # Avoid visualization errors with gray region
-                    clim = (1.01, 4.0)
+                    clim = (1.0, 4.0)
                 elif args.filetype == 'SCSR':
-                    clim = (-1.98, 0.00)
+                    clim = (-1.99, 0.00)
                     lh_mesh['cth'] = np.clip(th_lh, *clim)
                     rh_mesh['cth'] = np.clip(th_rh, *clim)
                     # Set undefined region to gray
-                    lh_mesh['cth'][undef_mask['lh']] = -2.0
-                    rh_mesh['cth'][undef_mask['rh']] = -2.0
+                    lh_mesh['cth'][undef_mask['lh']] = -2.01
+                    rh_mesh['cth'][undef_mask['rh']] = -2.01
                     # Avoid visualization errors with gray region
-                    clim = (-1.99, 0.0)
+                    clim = (-2.0, 0.0)
             else:
                 # Relative thickness
-                clim = (0.52, 1.0)
+                clim = (0.51, 1.0)
                 lh_mesh['cth'] = np.clip(th_lh, *clim)
                 rh_mesh['cth'] = np.clip(th_rh, *clim)
                 # Set undefined region to gray
-                lh_mesh['cth'][undef_mask['lh']] = 0.5
-                rh_mesh['cth'][undef_mask['rh']] = 0.5
+                lh_mesh['cth'][undef_mask['lh']] = 0.49
+                rh_mesh['cth'][undef_mask['rh']] = 0.49
                 # Avoid visualization errors with gray region
-                clim = (0.51, 1.0)
+                clim = (0.5, 1.0)
 
             # Create moved copy of meshes for joint visualization
             lh_mesh_moved = deepcopy(lh_mesh)
@@ -233,8 +233,18 @@ def main():
             if args.no_legend:
                 p = pv.Plotter(shape=(2, 4), window_size=(2240, 1080))
             else:
-                p = pv.Plotter(shape=(2, 5), window_size=(2240, 1080))
-                p.add_mesh(lh_mesh, opacity=0., **plot_params)
+                n_rows = 2
+                n_cols = 4
+                row_weights = [1 for i in range(n_rows)]
+                col_weights = [0.6] + [1 for i in range(n_cols)]
+                groups = [  (np.s_[:], 0),    (0, 1) ]
+                p = pv.Plotter(shape=(n_rows, n_cols+1),
+                               row_weights=row_weights,
+                               col_weights=col_weights, groups=groups,
+                               window_size=(2240, 500*n_rows))
+                p.add_mesh(lh_mesh, opacity=0., clim=clim, **plot_params)
+                # p = pv.Plotter(shape=(2, 5), window_size=(2240, 1080))
+                # p.add_mesh(lh_mesh, opacity=0., **plot_params)
                 if ref == 'absolute':
                     if args.filetype == 'thickness':
                         p.add_scalar_bar(title='cth (mm)', **scalar_bar_params)
