@@ -7,7 +7,8 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'visgeom=visgeom.visgeom:main'
+            'visgeom=visgeom.visgeom:main',
+            'plot-cortex=visgeom.plot_cortex:main'
         ]
     }
 )
