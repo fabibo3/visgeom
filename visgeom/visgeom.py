@@ -66,7 +66,7 @@ def main():
     parser.add_argument('-s', '--screenshot',
                         type=str,
                         nargs='?',
-                        const="/mnt/c/Users/Fabian/Desktop/",
+                        const="/mnt/c/Users/Fabia/Desktop/",
                         default=None,
                         help="Optionally specify a dir where screenshots are stored")
     parser.add_argument('--label_mode',
@@ -77,7 +77,11 @@ def main():
     args = parser.parse_args()
 
     if args.gray_unknown:
-        labels, ctab, names = fsio.read_annot('/mnt/ai-med-nas/Software/Freesurfer72/subjects/fsaverage5/label/lh.aparc.annot', orig_ids=True)
+        # labels, ctab, names = fsio.read_annot('/mnt/nas/Software/Freesurfer72/subjects/fsaverage5/label/lh.aparc.annot', orig_ids=True)
+        labels, ctab, names = fsio.read_annot('/mnt/nas/Software/Freesurfer72/subjects/fsaverage/label/lh.aparc.annot', orig_ids=True)
+        # labels, ctab, names = fsio.read_annot('/mnt/bear/work/cortex-ddpm/cortex_ddpm/templates/sphericalunet/lh.aparc.annot.ico4', orig_ids=True)
+        # labels, ctab, names = fsio.read_annot('/mnt/c/Users/Fabia/Desktop/fsaverage6/label/rh.aparc.annot', orig_ids=True)
+        labels[labels == 0] = 1639705 # unknown
         names = [name.decode() for name in names]
         id_to_name = {k: v for k, v in zip(ctab[:, -1], names)}
         parc = np.array(list(map(lambda x: id_to_name[x], labels)))

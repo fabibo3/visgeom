@@ -68,6 +68,7 @@ def vis_mesh(mesh: trimesh.Trimesh,
              # cmap_name='tab20b', # Parcellation
              gray_mask=None,
              smoothing=0,
+             enable_point_picking=False, # Pick points interactively
              interactive_cpos=True):
     """
     Show trimesh meshes with pyvista and optionally map values onto the
@@ -98,8 +99,13 @@ def vis_mesh(mesh: trimesh.Trimesh,
     if vertex_values is None:
         plotter.add_mesh(
             cloud,
+            # color='gray',
+            # color='lightgray',
+            color='gainsboro',
+            # color='lemonchiffon',
+            # color='cornflowerblue',
             smooth_shading=True,
-            specular=0.5,
+            specular=0.1,
             # show_edges=True,
         )
     else:
@@ -125,6 +131,7 @@ def vis_mesh(mesh: trimesh.Trimesh,
             lap = trimesh.smoothing.laplacian_calculation(mesh)
             for _ in range(smoothing):
                 vertex_values = lap * vertex_values
+            # np.save('v_smoothed.npy', np.clip(vertex_values, clim[0], clim[1]))
 
         if gray_mask is not None:
             vertex_values = np.clip(vertex_values, clim[0] + 0.01, clim[1] - 0.01)
@@ -132,15 +139,19 @@ def vis_mesh(mesh: trimesh.Trimesh,
             above_color = 'gray'
         else:
             above_color = None
+            # above_color = 'gray'
 
         plotter.add_mesh(
             cloud,
             smooth_shading=True,
-            specular=0.5,
+            # specular=0.5,
             scalars=vertex_values.copy(), # Plotter seems to change values sometimes
             **plot_params,
             show_scalar_bar=False,
             above_color=above_color,
+            # show_edges=True,
+            # show_vertices=True,
+            # vertex_color='white',
             # rgb=True,
             # clim=(np.nanmin(value), np.nanmax(value)),
             # scalars=1-value,
@@ -149,6 +160,18 @@ def vis_mesh(mesh: trimesh.Trimesh,
             vertical=True,
             label_font_size=32,
         )
+
+        # Point picking
+        if enable_point_picking:
+            # Define a callback function to get vertex IDs
+            def callback(picker, point):
+                print("#### Picked point ####")
+                print(point)
+                with open('picked_points_4.csv', 'a') as f:
+                    f.write(str(point) + '\n')
+            # Add the callback to the plotter
+            plotter.enable_point_picking(callback=callback, use_mesh=True)
+
         # value[value < 0.01] = 0.01
         # value[np.logical_and(value < 0.05, value > 0.01)] = 0.05
         # value[~np.isin(value, (0.01, 0.05))] = 0
@@ -163,9 +186,16 @@ def vis_mesh(mesh: trimesh.Trimesh,
         # )
 
     if point_labels:
-        points = cloud.points[:10]
-        labels = [str(i) for i in range(10)]
-        plotter.add_point_labels(points, labels)
+        point_ids = np.array(
+            [int(x.rstrip()) for x in
+             open('/mnt/nas/Projects/V2C-long/correspondence/picked_points_5.csv', 'r').readlines()]
+        )
+        points = cloud.points[point_ids]
+        labels = [str(i) for i, _ in enumerate(points)]
+        # This adds numbers to the points
+        # plotter.add_point_labels(points, labels)
+        # This renders poins as spheres
+        plotter.add_points(points, color='white', render_points_as_spheres=True, point_size=15)
     if screenshot:
         # Store mesh with color s.t. it can be opened in MeshLab
         if vertex_values is not None:
@@ -184,7 +214,7 @@ def vis_mesh(mesh: trimesh.Trimesh,
         logging.info("Stored a screenshot at %s", screenshot)
     elif interactive_cpos:
         cpos = plotter.show(interactive=True, auto_close=True, return_cpos=True)
-        np.save(os.path.join(module_dir, "../cposes/last_cpos.npy"), cpos)
+        np.save(os.path.join(module_dir, "cposes/last_cpos.npy"), cpos)
         plotter.close()
     else:
         plotter.show()
