@@ -22,7 +22,7 @@ from skimage.measure import find_contours
 
 from visgeom.utils.utils import voxelize_mesh, transform_mesh_affine
 
-module_dir = os.path.dirname(os.path.abspath(__file__))
+module_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Define the image slices to show, e.g. 0.5 means that the slice in the
 # middle of the image is shown
