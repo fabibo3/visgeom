@@ -72,9 +72,10 @@ def main():
         else:
             file_ending = args.file_ending
         plot_params = {
-            'cmap': 'jet_r',
+            # 'cmap': 'jet_r',RdYlGn
+            'cmap': 'RdYlGn',
             'smooth_shading': True,
-            'specular': 0.0, 
+            'specular': 0.0,
             'show_scalar_bar': False,
             'below_color': 'gray',
         }
@@ -87,6 +88,15 @@ def main():
     else:
         print("filetype must be 'thickness' or 'SCSR'")
         sys.exit(1)
+
+    if args.ico == 7:
+        smoothing_levels = [50]
+    elif args.ico == 6:
+        smoothing_levels = [30]
+    elif args.ico == 5:
+        smoothing_levels = [10]
+    else:
+        smoothing_level = [0]
 
     print('Reference regions: ', args.reference_regions)
     print('Icosahedron level: ', args.ico)
@@ -132,7 +142,7 @@ def main():
         thickness = fsio.read_morph_data(sub + '/surf/' + hemi + file_ending)
         # Load parcellation
         try:
-            parc= fsio.read_annot(sub + '/label/' + hemi + '.aparc.DKTatlas40.annot', orig_ids=True)
+            parc= fsio.read_annot(sub + '/label/' + hemi + '.aparc.DKTatlas40.annot')
         except FileNotFoundError:
             print(f"Individual mask not found, using fsaverage")
             parc = fsio.read_annot(f'/mnt/data/subjects/fsaverage{args.ico}/label/{hemi}.aparc.annot')
@@ -143,7 +153,7 @@ def main():
         ref_region_values = thickness[mask]
         # Save histogram without showing
         plt.hist(ref_region_values, bins=100)
-        plt.savefig(args.output_dir + '/histo/' + os.path.basename(os.path.normpath(sub)) + '_' + hemi + '_hist_global.png')
+        plt.savefig(args.output_dir + '/histo/' + os.path.basename(os.path.normpath(os.path.abspath(sub))) + '_' + hemi + '_hist_global.png')
         plt.clf()
         print(f'Number of vertices in the cortex w/o middle : {len(ref_region_values)}')
         ref_cth = np.mean(ref_region_values)
@@ -156,8 +166,10 @@ def main():
 
         # Relative to postcentral region
         if 'postcentral' in args.reference_regions:
-            post_id = parc[1][parc[-1].index(b'postcentral')][-1]
+            # post_id = parc[1][parc[-1].index(b'postcentral')][-1] # For orig IDs
+            post_id = parc[-1].index(b'postcentral')
             mask = parc[0] == post_id
+            np.save(args.output_dir + f'/{hemi}_postcentral_mask.npy', mask)
             ref_region_values = thickness[mask]
             # Save histogram without showing
             plt.hist(ref_region_values, bins=100)
@@ -187,7 +199,7 @@ def main():
         th_rh = th_all['rh'][ref]
         # Iterate over smoothing
         # for smoothing in (0, 100):
-        for smoothing in (50,):
+        for smoothing in smoothing_levels:
             # Prepare values
             if smoothing > 0:
                 for i in range(smoothing):
@@ -204,14 +216,14 @@ def main():
                     # Avoid visualization errors with gray region
                     clim = (1.0, 4.0)
                 elif args.filetype == 'SCSR':
-                    clim = (-1.99, 0.00)
+                    clim = (-2.99, 0.00)
                     lh_mesh['cth'] = np.clip(th_lh, *clim)
                     rh_mesh['cth'] = np.clip(th_rh, *clim)
                     # Set undefined region to gray
-                    lh_mesh['cth'][undef_mask['lh']] = -2.01
-                    rh_mesh['cth'][undef_mask['rh']] = -2.01
+                    lh_mesh['cth'][undef_mask['lh']] = -3.01
+                    rh_mesh['cth'][undef_mask['rh']] = -3.01
                     # Avoid visualization errors with gray region
-                    clim = (-2.0, 0.0)
+                    clim = (-3.0, 0.0)
             else:
                 # Relative thickness
                 clim = (0.51, 1.0)
@@ -295,7 +307,7 @@ def main():
                 pos = p.show(screenshot=out_fn, interactive=False, auto_close=True, return_cpos=True)
             else:
                 pos = p.show(screenshot=out_fn, interactive=True, auto_close=False, return_cpos=True)
-            # p.screenshot(out_fn, return_img=False)
+            p.screenshot(out_fn, return_img=False)
             p.close()
     pv.close_all()
 
